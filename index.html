@@ -398,11 +398,22 @@ let tab = 'today';
 let sessionDraft = null; // holds current workout in-progress
 
 /* ============ STORAGE ============ */
+function hydrateState(obj) {
+  // Shallow-merge the top level, but DEEP-merge settings so older saves or
+  // backups that predate newer settings fields (manualPhase,
+  // transitionDismissals) still get the current defaults instead of having
+  // the whole settings object replaced.
+  return {
+    ...EMPTY_DATA,
+    ...obj,
+    settings: { ...EMPTY_DATA.settings, ...(obj && obj.settings) },
+  };
+}
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      state = { ...EMPTY_DATA, ...JSON.parse(raw) };
+      state = hydrateState(JSON.parse(raw));
     }
   } catch (e) {
     showToast('Load error — starting fresh');
@@ -917,7 +928,12 @@ function buildSeries(key) {
     if (!s.exercises) continue;
     let target = null;
     if (key === 'pushup-family') {
-      for (const k of pushKeys) if (s.exercises[k]) { target = s.exercises[k]; break; }
+      // Phase III logs two push-up variants (Hindu + Diamond); pool every
+      // present variant so the chart reflects the best set across all of them,
+      // not just the first one matched.
+      let famReps = [];
+      for (const k of pushKeys) if (s.exercises[k]) famReps = famReps.concat(s.exercises[k]);
+      if (famReps.length) target = famReps;
     } else if (s.exercises[key]) target = s.exercises[key];
     if (target) {
       const max = Math.max(...target.map(r => parseInt(r) || 0));
@@ -1131,7 +1147,7 @@ function importBackup() {
   r.onload = e => {
     try {
       const obj = JSON.parse(e.target.result);
-      state = { ...EMPTY_DATA, ...obj };
+      state = hydrateState(obj);
       saveData();
       showToast('Backup imported');
       render();
