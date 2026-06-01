@@ -384,6 +384,15 @@ const PHASES = {
 
 const DAY_NAMES_FULL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
+// Shared warm-up — program.md reuses the same warm-up across Phases I–III.
+// Total ~2–3 min; the per-move durations are a sensible split, not gospel.
+const WARMUP = [
+  { name: 'Arm circles',       duration: '20–30s each direction',   link: 'https://spotebi.com/exercise-guide/arm-circles/' },
+  { name: 'Neck rolls',        duration: '5–10 slow rolls each way', link: 'https://spotebi.com/exercise-guide/neck-rolls/' },
+  { name: 'Hip openers',       duration: '30–60s',                   link: 'https://www.healthline.com/health/opening-hips' },
+  { name: 'Marching in place', duration: '1 min',                    link: 'https://spotebi.com/exercise-guide/march-in-place/' },
+];
+
 const EMPTY_DATA = {
   startDate: null,
   baseline: null,
@@ -689,11 +698,7 @@ function renderSessionLogger(phase, week) {
       ${week >= 5 ? `<button class="tiny mt-2" style="padding:4px 8px;border:1px solid ${sessionDraft.isCardWorkout ? 'var(--accent)' : 'var(--border)'};color:${sessionDraft.isCardWorkout ? 'var(--accent)' : 'var(--muted)'};background:transparent;" onclick="toggleCard()">${sessionDraft.isCardWorkout ? '✓ ' : ''}DECK-OF-CARDS WILDCARD</button>` : ''}
     </div>
 
-    <div class="card-thin">
-      <span style="color:var(--text);font-weight:bold;">WARM-UP</span>
-      <span class="dim-text"> · </span>
-      <span class="muted-text">2–3 min: arm circles, neck rolls, hip openers, marching in place.</span>
-    </div>
+    ${renderWarmup()}
   `;
 
   for (const ex of phase.exercises) {
@@ -751,6 +756,34 @@ function renderExercise(ex, rounds) {
       ${rowsHTML}
     </div>
   `;
+}
+
+/* Collapsible warm-up — collapsed by default to cut UI noise; tap to reveal
+   each movement's duration and a link to a how-to reference. Reused in every
+   phase (the program's warm-up doesn't change). */
+function renderWarmup() {
+  const open = window._warmupOpen;
+  let rows = '';
+  for (const w of WARMUP) {
+    rows += `<a href="${w.link}" target="_blank" rel="noopener noreferrer" class="lib-row">
+      <div class="lib-icon">▶</div>
+      <div class="lib-text">
+        <div class="lib-name">${escapeHTML(w.name)}</div>
+        <div class="lib-desc">${escapeHTML(w.duration)}</div>
+      </div>
+    </a>`;
+  }
+  return `<div style="margin-bottom:12px;">
+    <button class="phase-toggle" onclick="toggleWarmup()">
+      <span><span style="color:var(--text);font-weight:bold;">WARM-UP</span> <span class="dim-text">· 2–3 min</span></span>
+      <span>${open ? '▼' : '▶'}</span>
+    </button>
+    ${open ? `<div class="phase-content">${rows}</div>` : ''}
+  </div>`;
+}
+function toggleWarmup() {
+  window._warmupOpen = !window._warmupOpen;
+  render();
 }
 
 /* ============ ACTIONS ============ */
@@ -1270,6 +1303,7 @@ window.toggleLibPhase = toggleLibPhase;
 window.wipeAll = wipeAll;
 window.setManualPhase = setManualPhase;
 window.dismissTransition = dismissTransition;
+window.toggleWarmup = toggleWarmup;
 </script>
 </body>
 </html>

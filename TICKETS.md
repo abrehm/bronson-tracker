@@ -25,7 +25,7 @@ Two low-stakes robustness fixes in `index.html`. Neither is a current bug.
 
 ## TICKET-002 — Warm-up definitions & links (do after TICKET-001)
 
-**Status:** TODO
+**Status:** DONE (2026-06-01) — collapsible accordion, collapsed by default
 
 Turn the warm-up into structured, tappable references — like the existing
 exercise `▶ FORM` links — instead of the current static one-liner.
