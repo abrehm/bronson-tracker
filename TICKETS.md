@@ -63,3 +63,17 @@ below are a sensible split, not gospel (per Cowork).
 **Notes:** Cowork chose stable how-to pages (illustrations/video) over fragile
 individual clips. Cool-down is still a static one-liner — out of scope here
 unless we decide to give it the same treatment later.
+
+---
+
+## TICKET-003 — Version stamp + check-for-update
+
+**Status:** DONE (2026-06-01)
+
+Adds `APP_VERSION` plus a "CHECK FOR UPDATE" button (SETUP → ABOUT) that fetches
+the live `index.html` (cache-busted, `no-store`), compares its `APP_VERSION` to the
+running one, and offers a cache-busting reload (`?v=<latest>`) when they differ —
+so updates land without the kill-the-app / re-add-to-home-screen ritual.
+
+**Deploy convention:** bump `APP_VERSION` (near `STORAGE_KEY` at the top of the
+script) on EVERY deploy, or the check can't detect the new build.

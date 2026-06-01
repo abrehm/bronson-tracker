@@ -114,6 +114,14 @@
   }
   .input:focus, input:focus, textarea:focus { border-color: var(--accent); }
   textarea { padding: 10px 12px; height: auto; min-height: 60px; resize: vertical; }
+  /* iOS Safari gives type=date a native intrinsic width that ignores width:100%
+     and overflows its card. Reset appearance + let it shrink to the container. */
+  input[type=date] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+  }
   label.field { display: block; margin-bottom: 10px; }
   label.field .label { display: block; margin-bottom: 4px; }
   /* Rep stepper row */
@@ -341,6 +349,9 @@
    ======================================================================= */
 
 const STORAGE_KEY = 'bronson-tracker-v1';
+
+// Build version — BUMP THIS ON EVERY DEPLOY so "Check for update" can detect a new build.
+const APP_VERSION = '2026.06.01-1';
 
 const PHASES = {
   0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
@@ -1226,7 +1237,40 @@ function renderAboutCard() {
   return `<div class="card-thin">
     <div class="display" style="font-size:14px;color:var(--text);">ABOUT</div>
     <p class="tiny mt-2">Data saves locally in browser storage. Each session also prompts a .md file download — save to Dropbox so Cowork on Mac can read it. Use EXPORT FULL BACKUP weekly as insurance.</p>
+    <div class="row-between mt-3">
+      <span class="tiny dim-text">Version ${APP_VERSION}</span>
+      <button class="tiny accent-text" style="background:transparent;padding:4px 0;" onclick="checkForUpdate()">CHECK FOR UPDATE</button>
+    </div>
+    <div id="update-status" class="tiny mt-2"></div>
   </div>`;
+}
+function setUpdateStatus(content, color, isHTML) {
+  const el = document.getElementById('update-status');
+  if (!el) return;
+  el.style.color = color;
+  if (isHTML) el.innerHTML = content; else el.textContent = content;
+}
+async function checkForUpdate() {
+  setUpdateStatus('Checking…', 'var(--muted)');
+  try {
+    const base = location.href.split('?')[0].split('#')[0];
+    const res = await fetch(base + '?_=' + Date.now(), { cache: 'no-store' });
+    const text = await res.text();
+    const m = text.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    const latest = m && m[1];
+    if (!latest) { setUpdateStatus('Could not read the published version.', 'var(--warn)'); return; }
+    if (latest === APP_VERSION) {
+      setUpdateStatus(`You're on the latest (v${APP_VERSION}).`, 'var(--success)');
+    } else {
+      setUpdateStatus(`New version v${latest} is live (you're on v${APP_VERSION}). <button class="tiny" style="color:var(--accent);background:transparent;text-decoration:underline;padding:0;" onclick="applyUpdate('${latest}')">UPDATE NOW</button>`, 'var(--warn)', true);
+    }
+  } catch (e) {
+    setUpdateStatus('Update check failed — are you online?', 'var(--danger)');
+  }
+}
+function applyUpdate(v) {
+  const base = location.href.split('?')[0].split('#')[0];
+  location.replace(base + '?v=' + encodeURIComponent(v));
 }
 function renderDangerCard() {
   return `<div class="card danger">
@@ -1304,6 +1348,8 @@ window.wipeAll = wipeAll;
 window.setManualPhase = setManualPhase;
 window.dismissTransition = dismissTransition;
 window.toggleWarmup = toggleWarmup;
+window.checkForUpdate = checkForUpdate;
+window.applyUpdate = applyUpdate;
 </script>
 </body>
 </html>
