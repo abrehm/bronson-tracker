@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bronson">
+<meta name="theme-color" content="#0c0a09">
+<title>Bronson Tracker</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%230c0a09'/><text x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' fill='%23ea580c' font-family='Impact,sans-serif' font-size='90' font-weight='bold'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0a09;
+    --surface: #1c1917;
+    --surface-2: #292524;
+    --border: #44403c;
+    --border-2: #57534e;
+    --text: #f5f5f4;
+    --muted: #a8a29e;
+    --dim: #78716c;
+    --accent: #ea580c;
+    --accent-hover: #c2410c;
+    --success: #84cc16;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 14px;
+    min-height: 100vh;
+    overscroll-behavior-y: contain;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(at 0% 0%, rgba(234,88,12,0.06) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(234,88,12,0.03) 0px, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+  #app { position: relative; z-index: 1; padding-bottom: 96px; }
+  .display { font-family: 'Anton', 'Impact', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  header {
+    border-bottom: 2px solid var(--surface-2);
+    padding: 12px 16px;
+    background:
+      radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0) 0 0/4px 4px;
+  }
+  header .row { display: flex; align-items: baseline; justify-content: space-between; }
+  header h1 { font-family: 'Anton', sans-serif; font-size: 32px; color: var(--accent); margin: 0; line-height: 1; }
+  header .date { font-size: 10px; color: var(--dim); text-transform: uppercase; }
+  header .sub { margin-top: 4px; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  header .sub .dim { color: var(--dim); }
+  main { padding: 8px 12px 0; }
+  .card { border: 2px solid var(--surface-2); padding: 14px; margin-bottom: 12px; }
+  .card.accent { border-color: rgba(234,88,12,0.5); }
+  .card.danger { border-color: rgba(239,68,68,0.5); }
+  .card-thin { border: 1px solid var(--surface-2); padding: 12px; margin-bottom: 12px; }
+  h2 { font-family: 'Anton', sans-serif; font-size: 22px; margin: 0 0 4px; color: var(--text); }
+  h3 { font-family: 'Anton', sans-serif; font-size: 18px; margin: 0 0 4px; color: var(--text); }
+  p { margin: 4px 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+  p.tiny { font-size: 11px; }
+  .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  button {
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+  }
+  button.primary {
+    width: 100%; padding: 14px;
+    background: var(--accent); color: var(--bg);
+    font-family: 'Anton', sans-serif; font-size: 18px;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    border: none;
+  }
+  button.primary:active { background: var(--accent-hover); }
+  button.outline {
+    width: 100%; padding: 12px;
+    border: 2px solid var(--accent); color: var(--accent);
+    font-family: 'Anton', sans-serif; font-size: 16px;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    background: transparent;
+  }
+  button.muted {
+    width: 100%; padding: 10px;
+    background: var(--surface-2); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
+  button.danger-outline {
+    width: 100%; padding: 12px;
+    border: 2px solid #7f1d1d; color: #f87171;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: transparent;
+  }
+  .input, input[type=text], input[type=number], input[type=date], textarea {
+    width: 100%; padding: 0 12px;
+    height: 44px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+  }
+  .input:focus, input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { padding: 10px 12px; height: auto; min-height: 60px; resize: vertical; }
+  label.field { display: block; margin-bottom: 10px; }
+  label.field .label { display: block; margin-bottom: 4px; }
+  /* Rep stepper row */
+  .rep-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .rep-row .rname {
+    width: 32px; color: var(--dim);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  }
+  .rep-row button.step {
+    width: 44px; height: 44px;
+    border: 2px solid var(--border);
+    color: var(--text);
+    font-size: 20px;
+    background: transparent;
+    line-height: 1;
+  }
+  .rep-row button.step:active { background: var(--surface-2); }
+  .rep-row input.repval {
+    flex: 1; height: 44px;
+    text-align: center;
+    font-family: 'Anton', sans-serif;
+    font-size: 26px;
+    color: var(--accent);
+    background: var(--surface);
+    border: 2px solid var(--border);
+  }
+  .rep-row .runit { width: 32px; color: var(--dim); font-size: 10px; }
+  /* Exercise card */
+  .exercise {
+    border: 1px solid var(--surface-2);
+    padding: 12px;
+    margin-bottom: 12px;
+    background: rgba(28,25,23,0.3);
+  }
+  .ex-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .ex-name { font-family: 'Anton', sans-serif; font-size: 18px; line-height: 1.1; }
+  .ex-target { font-size: 10px; color: var(--dim); text-transform: uppercase; }
+  .form-btn {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border: 1px solid rgba(234,88,12,0.5);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: bold;
+    letter-spacing: 0.05em;
+    background: transparent;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .form-btn:active { background: rgba(234,88,12,0.1); }
+  /* Slider */
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    background: var(--border);
+    outline: none; border-radius: 3px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 24px; height: 24px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+  }
+  .felt-row { display: flex; align-items: center; gap: 12px; }
+  .felt-row .felt-val {
+    font-family: 'Anton', sans-serif;
+    font-size: 28px; color: var(--accent);
+    width: 40px; text-align: center; line-height: 1;
+  }
+  /* Bottom nav */
+  nav.bottom {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(12,10,9,0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 2px solid var(--surface-2);
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  nav.bottom .nav-row { display: flex; }
+  nav.bottom button {
+    flex: 1; padding: 12px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: var(--dim);
+    position: relative;
+  }
+  nav.bottom button.active { color: var(--accent); }
+  nav.bottom button .nav-label {
+    font-size: 10px; font-weight: bold;
+    letter-spacing: 0.08em;
+  }
+  nav.bottom button.active .indicator {
+    position: absolute; bottom: 0; height: 2px; width: 32px; background: var(--accent);
+  }
+  /* Save banner */
+  .banner {
+    margin: 8px 0;
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+  .banner.ok { background: rgba(132,204,22,0.1); border: 1px solid var(--success); color: var(--success); }
+  .banner.warn { background: rgba(245,158,11,0.1); border: 1px solid var(--warn); color: var(--warn); }
+  .banner.err { background: rgba(239,68,68,0.15); border: 1px solid var(--danger); color: #fca5a5; }
+  /* Status pill */
+  .pill {
+    display: inline-block; padding: 2px 8px;
+    border: 2px solid currentColor;
+    font-size: 10px; font-weight: bold;
+    letter-spacing: 0.05em;
+    transform: rotate(-1deg);
+  }
+  /* Tabs */
+  .tab { display: none; }
+  .tab.active { display: block; }
+  /* Tables and small grids */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-cell { border: 1px solid var(--surface-2); padding: 8px; }
+  .stat-cell .label { font-size: 9px; }
+  .stat-cell .val { font-family: 'Anton', sans-serif; font-size: 20px; line-height: 1.1; }
+  /* Library list */
+  .lib-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px; margin-bottom: 6px;
+    border: 1px solid var(--surface-2);
+    text-decoration: none; color: inherit;
+  }
+  .lib-row:active { background: var(--surface); border-color: rgba(234,88,12,0.5); }
+  .lib-icon {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(234,88,12,0.5);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .lib-text { flex: 1; min-width: 0; overflow: hidden; }
+  .lib-name { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-desc { font-size: 10px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Mini charts */
+  .chart-row { display: flex; align-items: flex-end; gap: 3px; height: 80px; padding: 8px 0; }
+  .chart-bar { flex: 1; background: var(--accent); min-height: 2px; opacity: 0.85; }
+  .chart-line { width: 100%; height: 80px; padding: 8px 0; }
+  /* Phase accordion */
+  .phase-toggle {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    background: transparent;
+    color: var(--text);
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid var(--surface-2);
+  }
+  .phase-content { padding: 8px 12px; border: 1px solid var(--surface-2); border-top: none; }
+  /* Session history row */
+  .sess-row {
+    border: 1px solid var(--surface-2);
+    margin-bottom: 8px;
+  }
+  .sess-head {
+    width: 100%; padding: 10px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: transparent; color: var(--text); text-align: left;
+  }
+  .sess-detail {
+    padding: 10px 12px;
+    border-top: 1px solid var(--surface-2);
+    background: rgba(28,25,23,0.3);
+    font-size: 11px;
+  }
+  .sess-detail .row { display: flex; justify-content: space-between; padding: 2px 0; }
+  /* Utility */
+  .row-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-6 { gap: 6px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-3 { margin-top: 12px; }
+  .mb-2 { margin-bottom: 8px; }
+  .text-center { text-align: center; }
+  .hidden { display: none; }
+  .grow { flex: 1; }
+  .small { font-size: 11px; }
+  .tiny { font-size: 10px; }
+  .accent-text { color: var(--accent); }
+  .muted-text { color: var(--muted); }
+  .dim-text { color: var(--dim); }
+  textarea.export-box {
+    height: 200px; font-size: 11px;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: var(--surface-2); color: var(--text);
+    padding: 10px 18px;
+    border: 1px solid var(--accent);
+    font-size: 12px; z-index: 100;
+    opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav class="bottom">
+  <div class="nav-row" id="nav-row"></div>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   BRONSON TRACKER — Standalone HTML version
+   Storage: localStorage (browser-native, works on iOS Safari)
+   Save flow: triggers a .md file download → user picks Dropbox in iOS Files
+   ======================================================================= */
+
+const STORAGE_KEY = 'bronson-tracker-v1';
+
+const PHASES = {
+  0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
+  1: {
+    id: 1, name: 'PHASE I', sub: 'Foundation · Weeks 1–4',
+    rounds: 2, daysPerWeek: 3, schedule: [1,3,5],
+    exercises: [
+      { id: 'pushup', name: 'Knee / Wall Push-ups', target: '8–12 reps', unit: 'reps', default: 8, video: 'https://www.youtube.com/watch?v=gOkCJ57IvNg', videoLabel: 'Hybrid Calisthenics — beginner home workout' },
+      { id: 'squat', name: 'Bodyweight Squats', target: '10–15 reps', unit: 'reps', default: 10, video: 'https://www.youtube.com/watch?v=P-yaD24bUE8', videoLabel: 'Runna — bodyweight squat form' },
+      { id: 'knee', name: 'Standing Knee Raises', target: '10 per side', unit: 'reps', default: 10, video: 'https://www.youtube.com/watch?v=73oRVDTnXgs', videoLabel: 'FlexXP — standing knee raise' },
+      { id: 'plank', name: 'Plank Hold', target: '15–30 sec', unit: 'sec', default: 15, video: 'https://www.youtube.com/watch?v=A2b2EmIg0dA', videoLabel: 'E3 Rehab — plank form (PT)' },
+      { id: 'hip', name: 'Hip Rotations', target: '10 each direction', unit: 'reps', default: 10, video: 'https://www.youtube.com/watch?v=JYqLwajOGjI', videoLabel: 'Runna — hip circles' },
+      { id: 'calf', name: 'Calf Raises', target: '15 reps', unit: 'reps', default: 15, video: 'https://www.youtube.com/watch?v=KRJIKsY02nE', videoLabel: 'Calf raise tutorial' },
+    ],
+  },
+  2: {
+    id: 2, name: 'PHASE II', sub: 'Build · Weeks 5–8',
+    rounds: 3, daysPerWeek: 4, schedule: [1,2,4,5],
+    exercises: [
+      { id: 'pushup', name: 'Full Push-ups', target: '8–15 reps', unit: 'reps', default: 10, video: 'https://www.youtube.com/watch?v=WDIpL0pjun0', videoLabel: 'NASM — push-up form' },
+      { id: 'squat', name: 'Bodyweight Squats', target: '15–20 reps', unit: 'reps', default: 15, video: 'https://www.youtube.com/watch?v=P-yaD24bUE8', videoLabel: 'Runna — bodyweight squat form' },
+      { id: 'lunge', name: 'Reverse Lunges', target: '8 per side', unit: 'reps', default: 8, video: 'https://www.youtube.com/watch?v=u_zSfK5ZFU4', videoLabel: 'BuiltLean — reverse lunge' },
+      { id: 'plank', name: 'Plank Hold', target: '30–60 sec', unit: 'sec', default: 30, video: 'https://www.youtube.com/watch?v=A2b2EmIg0dA', videoLabel: 'E3 Rehab — plank' },
+      { id: 'mtnclimb', name: 'Mountain Climbers', target: '20 total', unit: 'reps', default: 20, video: 'https://www.youtube.com/watch?v=CQk4MHY2_Tc', videoLabel: 'Runna — mountain climber' },
+      { id: 'calf', name: 'Calf Raises', target: '20 reps', unit: 'reps', default: 20, video: 'https://www.youtube.com/watch?v=KRJIKsY02nE', videoLabel: 'Calf raise tutorial' },
+    ],
+  },
+  3: {
+    id: 3, name: 'PHASE III', sub: 'Bronson Volume · Weeks 9+',
+    rounds: 4, daysPerWeek: 4, schedule: [1,2,4,6],
+    exercises: [
+      { id: 'hindu', name: 'Hindu Push-ups', target: '10–15 reps', unit: 'reps', default: 10, video: 'https://www.youtube.com/watch?v=NPkIWXKZEYg', videoLabel: 'Cali to the Crowd — Hindu push-up' },
+      { id: 'diamond', name: 'Diamond Push-ups', target: '8–12 reps', unit: 'reps', default: 8, video: 'https://www.youtube.com/watch?v=_4EGPVJuqfA', videoLabel: 'Diamond push-up' },
+      { id: 'squat', name: 'Bodyweight Squats', target: '25+ reps', unit: 'reps', default: 25, video: 'https://www.youtube.com/watch?v=P-yaD24bUE8', videoLabel: 'Runna — bodyweight squat form' },
+      { id: 'burpee', name: 'Full Burpees', target: '8–15 reps', unit: 'reps', default: 10, video: 'https://www.youtube.com/watch?v=qLBImHhCXSw', videoLabel: 'Well+Good — burpee' },
+      { id: 'plank', name: 'Plank Hold', target: '60–120 sec', unit: 'sec', default: 60, video: 'https://www.youtube.com/watch?v=A2b2EmIg0dA', videoLabel: 'E3 Rehab — plank' },
+      { id: 'calf', name: 'Calf Raises', target: '25 reps', unit: 'reps', default: 25, video: 'https://www.youtube.com/watch?v=KRJIKsY02nE', videoLabel: 'Calf raise tutorial' },
+    ],
+  },
+};
+
+const DAY_NAMES_FULL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+const EMPTY_DATA = {
+  startDate: null,
+  baseline: null,
+  sessions: [],
+  measurements: [],
+  settings: { goneBarefoot: false },
+};
+
+/* ============ STATE ============ */
+let state = { ...EMPTY_DATA };
+let tab = 'today';
+let sessionDraft = null; // holds current workout in-progress
+
+/* ============ STORAGE ============ */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = { ...EMPTY_DATA, ...JSON.parse(raw) };
+    }
+  } catch (e) {
+    showToast('Load error — starting fresh');
+  }
+}
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
+  } catch (e) {
+    showToast('Save failed: ' + e.message);
+    return false;
+  }
+}
+
+/* ============ HELPERS ============ */
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function daysBetween(aISO, bISO) {
+  const a = new Date(aISO + 'T00:00:00');
+  const b = new Date(bISO + 'T00:00:00');
+  return Math.floor((b - a) / 86400000);
+}
+function getCurrentPhase(startDate) {
+  if (!startDate) return 0;
+  const d = daysBetween(startDate, todayISO());
+  if (d < 0) return 0;
+  const wk = Math.floor(d/7) + 1;
+  if (wk <= 4) return 1;
+  if (wk <= 8) return 2;
+  return 3;
+}
+function getCurrentWeek(startDate) {
+  if (!startDate) return 0;
+  const d = daysBetween(startDate, todayISO());
+  if (d < 0) return 0;
+  return Math.floor(d/7) + 1;
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+}
+function escapeHTML(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ============ TOAST ============ */
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+/* ============ RENDER: HEADER ============ */
+function renderHeader() {
+  const phaseId = getCurrentPhase(state.startDate);
+  const week = getCurrentWeek(state.startDate);
+  const phase = PHASES[phaseId];
+  const today = new Date();
+  const todayLabel = today.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' });
+  const phaseTxt = phase.name + (week > 0 ? ' · WK ' + week : '');
+  return `<header>
+    <div class="row"><h1>BRONSON</h1><div class="date">${todayLabel}</div></div>
+    <div class="sub"><span><span class="dim">›</span> ${phaseTxt}</span><span class="dim">${phase.sub}</span></div>
+  </header>`;
+}
+
+/* ============ RENDER: TODAY TAB ============ */
+function renderToday() {
+  const phaseId = getCurrentPhase(state.startDate);
+  const phase = PHASES[phaseId];
+  const week = getCurrentWeek(state.startDate);
+
+  // Pre-start: no start date set
+  if (!state.startDate) {
+    return `
+      <div class="card">
+        <h2>Set your start date</h2>
+        <p>Go to SETUP to enter day one of Phase I. Then come back here.</p>
+        <button class="primary mt-2" onclick="setTab('setup')">GO TO SETUP →</button>
+      </div>
+      ${renderBaselineCard()}
+    `;
+  }
+
+  // Pre-start countdown
+  if (phaseId === 0) {
+    const daysUntil = -daysBetween(todayISO(), state.startDate);
+    return `
+      <div class="card accent">
+        <div class="label">Countdown to Phase I</div>
+        <div class="display" style="font-size:64px;color:var(--accent);line-height:1;margin-top:4px;">${String(daysUntil).padStart(2,'0')}</div>
+        <div class="tiny dim-text">days · start ${fmtDate(state.startDate)}</div>
+      </div>
+      ${renderBaselineCard()}
+      <div class="card">
+        <h3>Pre-flight</h3>
+        <ul style="margin:6px 0;padding-left:16px;font-size:13px;color:var(--muted);">
+          <li>Mat purchased</li>
+          <li>Flat-soled shoes ready</li>
+          <li>Clear basement space</li>
+          <li>Baseline measurements</li>
+          <li>Water bottle / towel</li>
+        </ul>
+      </div>
+    `;
+  }
+
+  // Active program — session logger
+  return renderSessionLogger(phase, week);
+}
+
+function renderBaselineCard() {
+  if (state.baseline) {
+    const b = state.baseline;
+    return `
+      <div class="card">
+        <div class="row-between mb-2">
+          <h3>BASELINE</h3>
+          <button class="accent-text tiny" onclick="editBaseline()">EDIT</button>
+        </div>
+        <div class="tiny dim-text mb-2">Recorded ${fmtDate(b.date)}</div>
+        <div class="stat-grid">
+          ${statCell('Bodyweight', b.bodyweight ? b.bodyweight + ' lb' : '—')}
+          ${statCell('Max push-ups', b.maxPushups || '—')}
+          ${statCell('Max squats', b.maxSquats || '—')}
+          ${statCell('Plank', b.plankHold ? b.plankHold + ' sec' : '—')}
+          ${statCell('Resting HR', b.restingHR ? b.restingHR + ' bpm' : '—')}
+          ${statCell('Waist', b.waist ? b.waist + ' in' : '—')}
+        </div>
+        ${b.notes ? `<p style="margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-2);">${escapeHTML(b.notes)}</p>` : ''}
+      </div>
+    `;
+  }
+  // Form
+  const b = window._baselineDraft || { date: todayISO(), bodyweight:'', maxPushups:'', maxSquats:'', plankHold:'', restingHR:'', waist:'', notes:'' };
+  return `
+    <div class="card accent">
+      <h3>BASELINE MEASUREMENTS</h3>
+      <p>Record before day one. Skip what you don't have yet.</p>
+      <label class="field"><span class="label">Date measured</span>
+        <input type="date" id="bl-date" value="${b.date}"></label>
+      <label class="field"><span class="label">Bodyweight (lb)</span>
+        <input type="number" inputmode="decimal" id="bl-bw" value="${b.bodyweight}"></label>
+      <label class="field"><span class="label">Max push-ups (one set)</span>
+        <input type="number" inputmode="numeric" id="bl-pu" value="${b.maxPushups}"></label>
+      <label class="field"><span class="label">Max squats (one set)</span>
+        <input type="number" inputmode="numeric" id="bl-sq" value="${b.maxSquats}"></label>
+      <label class="field"><span class="label">Plank hold (sec)</span>
+        <input type="number" inputmode="numeric" id="bl-pl" value="${b.plankHold}"></label>
+      <label class="field"><span class="label">Resting HR (bpm, AM)</span>
+        <input type="number" inputmode="numeric" id="bl-hr" value="${b.restingHR}"></label>
+      <label class="field"><span class="label">Waist (in, at navel)</span>
+        <input type="number" inputmode="decimal" id="bl-wa" value="${b.waist}"></label>
+      <label class="field"><span class="label">Notes</span>
+        <textarea id="bl-notes">${escapeHTML(b.notes)}</textarea></label>
+      <button class="primary" onclick="saveBaseline()">SAVE BASELINE</button>
+    </div>
+  `;
+}
+
+function statCell(label, val) {
+  return `<div class="stat-cell"><div class="label">${label}</div><div class="val">${escapeHTML(val)}</div></div>`;
+}
+
+function renderSessionLogger(phase, week) {
+  const dow = new Date().getDay();
+  const isScheduled = phase.schedule.includes(dow);
+  const todaySess = state.sessions.find(s => s.date === todayISO());
+
+  // Initialize draft if needed
+  if (!sessionDraft || sessionDraft._phaseId !== phase.id) {
+    const lastSession = [...state.sessions].reverse().find(s => s.phase === phase.id);
+    const exercises = {};
+    for (const ex of phase.exercises) {
+      const fromLast = lastSession && lastSession.exercises && lastSession.exercises[ex.id];
+      exercises[ex.id] = fromLast ? fromLast.map(() => ex.default) : Array(phase.rounds).fill(ex.default);
+    }
+    sessionDraft = {
+      _phaseId: phase.id,
+      exercises,
+      howFelt: 7,
+      duration: '',
+      notes: '',
+      isCardWorkout: false,
+    };
+  }
+
+  let html = `
+    <div class="card ${isScheduled ? 'accent' : ''}">
+      <div class="row-between">
+        <div>
+          <div class="display" style="font-size:22px;line-height:1;">${isScheduled ? 'TRAINING DAY' : 'OFF DAY'}</div>
+          <div class="tiny muted-text mt-2">${phase.name} · Week ${week} · ${phase.rounds} rounds</div>
+        </div>
+        ${todaySess ? '<span class="pill" style="color:var(--success);">LOGGED</span>' : ''}
+      </div>
+      ${!isScheduled ? `<p class="tiny mt-2">Scheduled: ${phase.schedule.map(d => DAY_NAMES_FULL[d]).join(' / ')}. Log anyway if you trained.</p>` : ''}
+      ${week >= 5 ? `<button class="tiny mt-2" style="padding:4px 8px;border:1px solid ${sessionDraft.isCardWorkout ? 'var(--accent)' : 'var(--border)'};color:${sessionDraft.isCardWorkout ? 'var(--accent)' : 'var(--muted)'};background:transparent;" onclick="toggleCard()">${sessionDraft.isCardWorkout ? '✓ ' : ''}DECK-OF-CARDS WILDCARD</button>` : ''}
+    </div>
+
+    <div class="card-thin">
+      <span style="color:var(--text);font-weight:bold;">WARM-UP</span>
+      <span class="dim-text"> · </span>
+      <span class="muted-text">2–3 min: arm circles, neck rolls, hip openers, marching in place.</span>
+    </div>
+  `;
+
+  for (const ex of phase.exercises) {
+    html += renderExercise(ex, sessionDraft.exercises[ex.id]);
+  }
+
+  html += `
+    <div class="card-thin">
+      <span style="color:var(--text);font-weight:bold;">COOL-DOWN</span>
+      <span class="dim-text"> · </span>
+      <span class="muted-text">3–5 min: hamstring, quad, chest opener, child's pose.</span>
+    </div>
+
+    <div class="card">
+      <h3>HOW DID IT FEEL?</h3>
+      <p class="tiny">1 = wrecked · 5 = honest grind · 10 = could do it again</p>
+      <div class="felt-row mt-2">
+        <input type="range" min="1" max="10" value="${sessionDraft.howFelt}" oninput="setFelt(this.value)">
+        <span class="felt-val" id="felt-val">${sessionDraft.howFelt}</span>
+      </div>
+    </div>
+
+    <label class="field"><span class="label">Duration (min, optional)</span>
+      <input type="number" inputmode="numeric" value="${sessionDraft.duration}" oninput="sessionDraft.duration=this.value"></label>
+    <label class="field"><span class="label">Notes</span>
+      <textarea oninput="sessionDraft.notes=this.value" placeholder="Form issues, soreness, mood, anything off…">${escapeHTML(sessionDraft.notes)}</textarea></label>
+
+    <button class="primary" onclick="saveSession()">SAVE SESSION</button>
+    <p class="tiny dim-text text-center mt-2">Saves to your phone AND prompts you to save a .md file to Dropbox.</p>
+    ${todaySess ? '<p class="tiny dim-text text-center">Re-saving overwrites today\'s existing log.</p>' : ''}
+  `;
+  return html;
+}
+
+function renderExercise(ex, rounds) {
+  let rowsHTML = '';
+  for (let i = 0; i < rounds.length; i++) {
+    rowsHTML += `<div class="rep-row">
+      <div class="rname">R${i+1}</div>
+      <button class="step" onclick="adjustRep('${ex.id}',${i},-1)">−</button>
+      <input type="number" inputmode="numeric" class="repval" value="${rounds[i]}" oninput="setRep('${ex.id}',${i},this.value)">
+      <div class="runit">${ex.unit}</div>
+      <button class="step" onclick="adjustRep('${ex.id}',${i},1)">+</button>
+    </div>`;
+  }
+  return `
+    <div class="exercise">
+      <div class="ex-head">
+        <div>
+          <div class="ex-name">${escapeHTML(ex.name)}</div>
+          <div class="ex-target">${escapeHTML(ex.target)}</div>
+        </div>
+        ${ex.video ? `<a class="form-btn" href="${ex.video}" target="_blank" rel="noopener noreferrer" title="${escapeHTML(ex.videoLabel)}">▶ FORM</a>` : ''}
+      </div>
+      ${rowsHTML}
+    </div>
+  `;
+}
+
+/* ============ ACTIONS ============ */
+function setTab(t) { tab = t; render(); window.scrollTo(0,0); }
+function adjustRep(exId, i, delta) {
+  sessionDraft.exercises[exId][i] = Math.max(0, sessionDraft.exercises[exId][i] + delta);
+  render();
+}
+function setRep(exId, i, val) {
+  sessionDraft.exercises[exId][i] = Math.max(0, parseInt(val) || 0);
+}
+function setFelt(v) {
+  sessionDraft.howFelt = parseInt(v);
+  const el = document.getElementById('felt-val');
+  if (el) el.textContent = v;
+}
+function toggleCard() {
+  sessionDraft.isCardWorkout = !sessionDraft.isCardWorkout;
+  render();
+}
+
+function saveBaseline() {
+  const draft = {
+    date: document.getElementById('bl-date').value,
+    bodyweight: document.getElementById('bl-bw').value,
+    maxPushups: document.getElementById('bl-pu').value,
+    maxSquats: document.getElementById('bl-sq').value,
+    plankHold: document.getElementById('bl-pl').value,
+    restingHR: document.getElementById('bl-hr').value,
+    waist: document.getElementById('bl-wa').value,
+    notes: document.getElementById('bl-notes').value,
+  };
+  state.baseline = draft;
+  window._baselineDraft = null;
+  if (saveData()) showToast('Baseline saved');
+  render();
+}
+function editBaseline() {
+  window._baselineDraft = { ...state.baseline };
+  state.baseline = null;
+  render();
+}
+
+function buildSessionMarkdown(session) {
+  const phase = PHASES[session.phase];
+  const d = new Date(session.date + 'T00:00:00');
+  const dayName = d.toLocaleDateString(undefined, { weekday:'short' });
+  const lines = [];
+  lines.push(`# ${session.date} · ${dayName} · ${phase.name} Wk ${session.week}${session.isCardWorkout ? ' · DECK' : ''}`);
+  lines.push('');
+  for (const ex of phase.exercises) {
+    const reps = session.exercises[ex.id];
+    if (reps) {
+      const unit = ex.unit === 'sec' ? ' (sec)' : '';
+      lines.push(`- ${ex.name}${unit}: ${reps.join(', ')}`);
+    }
+  }
+  lines.push('');
+  lines.push(`Felt: ${session.howFelt}/10`);
+  if (session.duration) lines.push(`Duration: ${session.duration} min`);
+  if (session.notes) lines.push(`Notes: ${session.notes}`);
+  return lines.join('\n');
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function saveSession() {
+  const phaseId = getCurrentPhase(state.startDate);
+  const phase = PHASES[phaseId];
+  const week = getCurrentWeek(state.startDate);
+  const session = {
+    id: 's-' + Date.now(),
+    date: todayISO(),
+    phase: phase.id,
+    week,
+    exercises: JSON.parse(JSON.stringify(sessionDraft.exercises)),
+    howFelt: sessionDraft.howFelt,
+    notes: sessionDraft.notes,
+    duration: sessionDraft.duration ? parseInt(sessionDraft.duration) : null,
+    isCardWorkout: sessionDraft.isCardWorkout,
+  };
+  state.sessions = [...state.sessions.filter(s => s.date !== session.date), session]
+    .sort((a,b) => a.date.localeCompare(b.date));
+  saveData();
+  showToast('Saved locally. Downloading file…');
+  const md = buildSessionMarkdown(session);
+  downloadFile(`${session.date}.md`, md);
+  sessionDraft = null;
+  setTimeout(render, 300);
+}
+
+/* ============ LOG TAB ============ */
+function renderLog() {
+  if (state.sessions.length === 0) {
+    return `<p class="text-center mt-3 dim-text">No sessions logged yet.</p>`;
+  }
+  const sorted = [...state.sessions].sort((a,b) => b.date.localeCompare(a.date));
+  let html = `<h2 class="display mb-2">SESSION LOG <span class="dim-text" style="font-size:14px;">(${sorted.length})</span></h2>`;
+  for (const s of sorted) {
+    const phase = PHASES[s.phase];
+    const open = window._openSession === s.id;
+    const totalReps = Object.values(s.exercises||{}).flat().reduce((a,b) => a + (parseInt(b)||0), 0);
+    html += `<div class="sess-row">
+      <button class="sess-head" onclick="toggleSession('${s.id}')">
+        <div>
+          <div style="color:var(--text);">${fmtDate(s.date)}</div>
+          <div class="tiny dim-text">${phase ? phase.name : ''} · Wk ${s.week} · Felt ${s.howFelt}/10${s.isCardWorkout?' · 🂠':''}</div>
+        </div>
+        <span class="display accent-text" style="font-size:18px;">${totalReps}</span>
+      </button>`;
+    if (open && phase) {
+      html += `<div class="sess-detail">`;
+      for (const ex of phase.exercises) {
+        const reps = s.exercises && s.exercises[ex.id];
+        if (reps) html += `<div class="row"><span class="dim-text">${ex.name}</span><span>${reps.join(' · ')} ${ex.unit}</span></div>`;
+      }
+      if (s.duration) html += `<div class="row" style="border-top:1px solid var(--surface-2);margin-top:4px;padding-top:4px;"><span class="dim-text">Duration</span><span>${s.duration} min</span></div>`;
+      if (s.notes) html += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--surface-2);color:var(--muted);font-style:italic;">"${escapeHTML(s.notes)}"</div>`;
+      html += `<button class="tiny" style="margin-top:8px;color:#f87171;background:transparent;" onclick="deleteSession('${s.id}')">🗑 DELETE</button>
+        <button class="tiny" style="margin-top:8px;margin-left:12px;color:var(--accent);background:transparent;" onclick="redownloadSession('${s.id}')">⬇ RE-DOWNLOAD</button>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+function toggleSession(id) {
+  window._openSession = window._openSession === id ? null : id;
+  render();
+}
+function deleteSession(id) {
+  if (!confirm('Delete this session locally? The .md file in Dropbox is not affected.')) return;
+  state.sessions = state.sessions.filter(s => s.id !== id);
+  saveData();
+  render();
+}
+function redownloadSession(id) {
+  const s = state.sessions.find(x => x.id === id);
+  if (!s) return;
+  downloadFile(`${s.date}.md`, buildSessionMarkdown(s));
+}
+
+/* ============ STATS TAB ============ */
+function renderStats() {
+  let html = '';
+  html += renderChart('MAX PUSH-UPS / SET', buildSeries('pushup-family'), 'reps');
+  html += renderChart('MAX SQUATS / SET', buildSeries('squat'), 'reps');
+  html += renderChart('MAX PLANK HOLD', buildSeries('plank'), 'sec');
+  html += renderChart('BODYWEIGHT', buildWeightSeries(), 'lb');
+  html += renderFeltChart();
+  html += renderMeasurementsBlock();
+  return html;
+}
+function buildSeries(key) {
+  const out = [];
+  const pushKeys = ['pushup','hindu','diamond'];
+  if (key === 'pushup-family' && state.baseline && state.baseline.maxPushups) {
+    out.push({ date: state.baseline.date, val: parseInt(state.baseline.maxPushups) });
+  } else if (key === 'squat' && state.baseline && state.baseline.maxSquats) {
+    out.push({ date: state.baseline.date, val: parseInt(state.baseline.maxSquats) });
+  } else if (key === 'plank' && state.baseline && state.baseline.plankHold) {
+    out.push({ date: state.baseline.date, val: parseInt(state.baseline.plankHold) });
+  }
+  for (const s of state.sessions) {
+    if (!s.exercises) continue;
+    let target = null;
+    if (key === 'pushup-family') {
+      for (const k of pushKeys) if (s.exercises[k]) { target = s.exercises[k]; break; }
+    } else if (s.exercises[key]) target = s.exercises[key];
+    if (target) {
+      const max = Math.max(...target.map(r => parseInt(r) || 0));
+      out.push({ date: s.date, val: max });
+    }
+  }
+  return out;
+}
+function buildWeightSeries() {
+  const out = [];
+  if (state.baseline && state.baseline.bodyweight) {
+    out.push({ date: state.baseline.date, val: parseFloat(state.baseline.bodyweight) });
+  }
+  for (const m of state.measurements) {
+    if (m.bodyweight) out.push({ date: m.date, val: parseFloat(m.bodyweight) });
+  }
+  return out.sort((a,b) => a.date.localeCompare(b.date));
+}
+function renderChart(title, data, unit) {
+  if (data.length === 0) {
+    return `<div class="card-thin"><div class="display" style="font-size:13px;">${title}</div><p class="tiny mt-2">no data yet</p></div>`;
+  }
+  const max = Math.max(...data.map(d => d.val), 1);
+  const last = data[data.length-1].val;
+  let bars = '';
+  for (const d of data) {
+    const h = (d.val / max) * 100;
+    bars += `<div class="chart-bar" style="height:${h}%;" title="${d.date}: ${d.val}"></div>`;
+  }
+  return `<div class="card-thin">
+    <div class="row-between mb-2">
+      <span class="display" style="font-size:13px;">${title}</span>
+      <span class="tiny dim-text">${last.toFixed(unit === '/10' ? 1 : 0)} ${unit}</span>
+    </div>
+    <div class="chart-row">${bars}</div>
+  </div>`;
+}
+function renderFeltChart() {
+  const buckets = {};
+  for (const s of state.sessions) {
+    if (!buckets[s.week]) buckets[s.week] = [];
+    buckets[s.week].push(s.howFelt);
+  }
+  const data = Object.keys(buckets).sort((a,b)=>+a-+b).map(wk => ({
+    label: 'W'+wk,
+    val: buckets[wk].reduce((a,b)=>a+b,0) / buckets[wk].length,
+  }));
+  return renderChart('HOW IT FELT (WEEKLY AVG)', data, '/10');
+}
+function renderMeasurementsBlock() {
+  const showAdd = window._showAddMeasurement;
+  let html = `<div class="card">
+    <div class="row-between mb-2">
+      <h3>MEASUREMENTS</h3>
+      <button class="accent-text tiny" onclick="toggleAddMeasurement()">+ ADD</button>
+    </div>`;
+  if (showAdd) {
+    const m = window._mDraft || { date: todayISO(), bodyweight:'', waist:'', restingHR:'', notes:'' };
+    html += `
+      <label class="field"><span class="label">Date</span>
+        <input type="date" id="m-date" value="${m.date}"></label>
+      <label class="field"><span class="label">Bodyweight (lb)</span>
+        <input type="number" inputmode="decimal" id="m-bw" value="${m.bodyweight}"></label>
+      <label class="field"><span class="label">Waist (in)</span>
+        <input type="number" inputmode="decimal" id="m-wa" value="${m.waist}"></label>
+      <label class="field"><span class="label">Resting HR</span>
+        <input type="number" inputmode="numeric" id="m-hr" value="${m.restingHR}"></label>
+      <label class="field"><span class="label">Notes</span>
+        <textarea id="m-notes">${escapeHTML(m.notes)}</textarea></label>
+      <button class="primary" onclick="saveMeasurement()">SAVE MEASUREMENT</button>
+    `;
+  }
+  if (state.measurements.length === 0 && !showAdd) {
+    html += `<p class="tiny mt-2">Add weekly to track changes.</p>`;
+  }
+  for (const m of [...state.measurements].sort((a,b)=>b.date.localeCompare(a.date))) {
+    html += `<div style="border-top:1px solid var(--surface-2);padding:8px 0;margin-top:8px;">
+      <div style="color:var(--text);">${fmtDate(m.date)}</div>
+      <div class="tiny muted-text mt-2">
+        ${m.bodyweight?'BW '+m.bodyweight+'lb ':''}
+        ${m.waist?'· Waist '+m.waist+'in ':''}
+        ${m.restingHR?'· HR '+m.restingHR:''}
+      </div>
+      ${m.notes?`<div class="tiny dim-text mt-2" style="font-style:italic;">"${escapeHTML(m.notes)}"</div>`:''}
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+function toggleAddMeasurement() {
+  window._showAddMeasurement = !window._showAddMeasurement;
+  render();
+}
+function saveMeasurement() {
+  const m = {
+    date: document.getElementById('m-date').value,
+    bodyweight: document.getElementById('m-bw').value,
+    waist: document.getElementById('m-wa').value,
+    restingHR: document.getElementById('m-hr').value,
+    notes: document.getElementById('m-notes').value,
+  };
+  state.measurements = [...state.measurements, m];
+  window._showAddMeasurement = false;
+  saveData();
+  showToast('Measurement saved');
+  render();
+}
+
+/* ============ SETUP TAB ============ */
+function renderSetup() {
+  return `
+    ${renderStartDateCard()}
+    ${renderFootwearCard()}
+    ${renderExportCard()}
+    ${renderImportCard()}
+    ${renderLibraryCard()}
+    ${renderAboutCard()}
+    ${renderDangerCard()}
+  `;
+}
+function renderStartDateCard() {
+  return `<div class="card">
+    <h3>PROGRAM START DATE</h3>
+    <p>Day one of Phase I. Used to auto-detect phase and week.</p>
+    <input type="date" id="start-date" value="${state.startDate || '2026-06-01'}" class="mb-2">
+    <button class="primary" onclick="saveStartDate()">SAVE START DATE</button>
+    ${state.startDate ? `<p class="tiny mt-2">Currently saved: <span style="color:var(--text);">${fmtDate(state.startDate)}</span></p>` : ''}
+  </div>`;
+}
+function saveStartDate() {
+  state.startDate = document.getElementById('start-date').value;
+  saveData();
+  showToast('Start date saved');
+  render();
+}
+function renderFootwearCard() {
+  return `<div class="card">
+    <h3>FOOTWEAR</h3>
+    <p>Around weeks 6–8, if balance and joints feel good, consider barefoot on the mat.</p>
+    <button class="${state.settings.goneBarefoot ? 'primary' : 'outline'}" onclick="toggleBarefoot()">
+      ${state.settings.goneBarefoot ? '✓ TRAINING BAREFOOT' : 'STILL IN SHOES'}
+    </button>
+  </div>`;
+}
+function toggleBarefoot() {
+  state.settings.goneBarefoot = !state.settings.goneBarefoot;
+  saveData();
+  render();
+}
+function renderExportCard() {
+  return `<div class="card">
+    <h3>EXPORT FULL BACKUP</h3>
+    <p>Downloads a JSON file with everything: baseline, measurements, sessions, settings. Save to Dropbox as your master backup.</p>
+    <button class="outline" onclick="exportAll()">DOWNLOAD BACKUP.JSON</button>
+  </div>`;
+}
+function exportAll() {
+  const filename = `bronson-backup-${todayISO()}.json`;
+  downloadFile(filename, JSON.stringify(state, null, 2));
+  showToast('Backup downloading');
+}
+function renderImportCard() {
+  return `<div class="card">
+    <h3>IMPORT BACKUP</h3>
+    <p>Restore from a previously downloaded backup.json. Replaces all current local data.</p>
+    <input type="file" id="import-file" accept=".json" style="font-size:11px;color:var(--muted);width:100%;margin-bottom:8px;">
+    <button class="muted" onclick="importBackup()">IMPORT FROM FILE</button>
+  </div>`;
+}
+function importBackup() {
+  const f = document.getElementById('import-file').files[0];
+  if (!f) { showToast('No file selected'); return; }
+  if (!confirm('Replace all local data with backup contents?')) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const obj = JSON.parse(e.target.result);
+      state = { ...EMPTY_DATA, ...obj };
+      saveData();
+      showToast('Backup imported');
+      render();
+    } catch (err) {
+      showToast('Bad file: ' + err.message);
+    }
+  };
+  r.readAsText(f);
+}
+function renderLibraryCard() {
+  let html = `<div class="card">
+    <h3>FORM REFERENCE LIBRARY</h3>
+    <p>All exercise demos. Tap to open YouTube.</p>`;
+  for (const pid of [1,2,3]) {
+    const phase = PHASES[pid];
+    const open = window._openLibPhase === pid;
+    html += `<button class="phase-toggle mt-2" onclick="toggleLibPhase(${pid})">
+      <span><span style="font-family:'Anton',sans-serif;font-size:14px;">${phase.name}</span><br><span class="tiny dim-text">${phase.sub}</span></span>
+      <span>${open ? '▼' : '▶'}</span>
+    </button>`;
+    if (open) {
+      html += `<div class="phase-content">`;
+      for (const ex of phase.exercises) {
+        html += `<a href="${ex.video}" target="_blank" rel="noopener noreferrer" class="lib-row">
+          <div class="lib-icon">▶</div>
+          <div class="lib-text">
+            <div class="lib-name">${escapeHTML(ex.name)}</div>
+            <div class="lib-desc">${escapeHTML(ex.videoLabel)}</div>
+          </div>
+        </a>`;
+      }
+      html += `</div>`;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+function toggleLibPhase(pid) {
+  window._openLibPhase = window._openLibPhase === pid ? null : pid;
+  render();
+}
+function renderAboutCard() {
+  return `<div class="card-thin">
+    <div class="display" style="font-size:14px;color:var(--text);">ABOUT</div>
+    <p class="tiny mt-2">Data saves locally in browser storage. Each session also prompts a .md file download — save to Dropbox so Cowork on Mac can read it. Use EXPORT FULL BACKUP weekly as insurance.</p>
+  </div>`;
+}
+function renderDangerCard() {
+  return `<div class="card danger">
+    <h3 style="color:#f87171;">DANGER ZONE</h3>
+    <button class="danger-outline mt-2" onclick="wipeAll()">🗑 WIPE ALL LOCAL DATA</button>
+    <p class="tiny mt-2">Does not delete .md files in Dropbox — only the local browser copy.</p>
+  </div>`;
+}
+function wipeAll() {
+  if (!confirm('Wipe ALL local data?')) return;
+  if (!confirm('Really sure? Last chance.')) return;
+  state = { ...EMPTY_DATA };
+  saveData();
+  showToast('Local data wiped');
+  render();
+}
+
+/* ============ NAV ============ */
+function renderNav() {
+  const items = [
+    { id:'today', label:'TODAY', icon:'🔥' },
+    { id:'log', label:'LOG', icon:'📋' },
+    { id:'stats', label:'STATS', icon:'📈' },
+    { id:'setup', label:'SETUP', icon:'⚙' },
+  ];
+  let html = '';
+  for (const it of items) {
+    html += `<button class="${tab === it.id ? 'active' : ''}" onclick="setTab('${it.id}')">
+      <span style="font-size:18px;">${it.icon}</span>
+      <span class="nav-label">${it.label}</span>
+      ${tab === it.id ? '<span class="indicator"></span>' : ''}
+    </button>`;
+  }
+  document.getElementById('nav-row').innerHTML = html;
+}
+
+/* ============ MAIN RENDER ============ */
+function render() {
+  let body = '';
+  body += renderHeader();
+  body += '<main>';
+  if (tab === 'today') body += renderToday();
+  else if (tab === 'log') body += renderLog();
+  else if (tab === 'stats') body += renderStats();
+  else if (tab === 'setup') body += renderSetup();
+  body += '</main>';
+  document.getElementById('app').innerHTML = body;
+  renderNav();
+}
+
+/* ============ BOOT ============ */
+loadData();
+render();
+
+/* Expose for inline handlers */
+window.setTab = setTab;
+window.adjustRep = adjustRep;
+window.setRep = setRep;
+window.setFelt = setFelt;
+window.toggleCard = toggleCard;
+window.saveBaseline = saveBaseline;
+window.editBaseline = editBaseline;
+window.saveSession = saveSession;
+window.toggleSession = toggleSession;
+window.deleteSession = deleteSession;
+window.redownloadSession = redownloadSession;
+window.toggleAddMeasurement = toggleAddMeasurement;
+window.saveMeasurement = saveMeasurement;
+window.saveStartDate = saveStartDate;
+window.toggleBarefoot = toggleBarefoot;
+window.exportAll = exportAll;
+window.importBackup = importBackup;
+window.toggleLibPhase = toggleLibPhase;
+window.wipeAll = wipeAll;
+</script>
+</body>
+</html>
