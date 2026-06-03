@@ -50,7 +50,7 @@
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
   header {
     border-bottom: 2px solid var(--surface-2);
-    padding: 12px 16px;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
     background:
       radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0) 0 0/4px 4px;
   }
@@ -352,7 +352,7 @@
 const STORAGE_KEY = 'bronson-tracker-v1';
 
 // Build version — BUMP THIS ON EVERY DEPLOY so "Check for update" can detect a new build.
-const APP_VERSION = '2026.06.01-3';
+const APP_VERSION = '2026.06.01-4';
 
 const PHASES = {
   0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
