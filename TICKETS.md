@@ -77,3 +77,19 @@ so updates land without the kill-the-app / re-add-to-home-screen ritual.
 
 **Deploy convention:** bump `APP_VERSION` (near `STORAGE_KEY` at the top of the
 script) on EVERY deploy, or the check can't detect the new build.
+
+---
+
+## TICKET-004 — Auto-backup safety net
+
+**Status:** DONE (2026-06-01)
+
+localStorage on an iOS home-screen app can be evicted (≈7 days unused, storage
+pressure, clearing Safari data), and the per-session `.md` downloads cover only
+workout logs — not baseline/measurements/settings, and they aren't re-importable.
+So:
+- `settings.lastBackupAt` records the last full backup; `exportAll()` sets it.
+- Saving/editing the **baseline** auto-downloads a full backup (precious,
+  rarely-changing data).
+- A **stale-backup banner** appears when data exists and the last backup is
+  missing or >7 days old, with one-tap "Back up now". SETUP shows "Last backup: <when>".

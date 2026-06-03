@@ -352,7 +352,7 @@
 const STORAGE_KEY = 'bronson-tracker-v1';
 
 // Build version — BUMP THIS ON EVERY DEPLOY so "Check for update" can detect a new build.
-const APP_VERSION = '2026.06.01-4';
+const APP_VERSION = '2026.06.01-5';
 
 const PHASES = {
   0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
@@ -410,7 +410,7 @@ const EMPTY_DATA = {
   baseline: null,
   sessions: [],
   measurements: [],
-  settings: { goneBarefoot: false, manualPhase: null, transitionDismissals: {} },
+  settings: { goneBarefoot: false, manualPhase: null, transitionDismissals: {}, lastBackupAt: null },
 };
 
 /* ============ STATE ============ */
@@ -617,6 +617,35 @@ function renderTransitionReminder() {
         <button class="tiny dim-text" style="background:transparent;padding:4px 8px;" onclick="dismissTransition('${r.transitionKey}')">DISMISS</button>
       </div>
       <p class="small" style="color:var(--text);line-height:1.45;">${body}</p>
+    </div>
+  `;
+}
+
+/* ---- Backup safety net ---- */
+function backupAgeLabel() {
+  const last = state.settings && state.settings.lastBackupAt;
+  if (!last) return 'never';
+  const d = daysBetween(last, todayISO());
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  return `${d} days ago`;
+}
+function isBackupStale() {
+  const hasData = !!state.baseline || (state.sessions && state.sessions.length > 0);
+  if (!hasData) return false;
+  const last = state.settings && state.settings.lastBackupAt;
+  if (!last) return true;
+  return daysBetween(last, todayISO()) >= 7;
+}
+function renderBackupReminder() {
+  if (!isBackupStale()) return '';
+  return `
+    <div class="card" style="border-color:var(--warn);background:rgba(245,158,11,0.06);">
+      <div class="row-between mb-2">
+        <span style="color:var(--warn);font-family:'Anton',sans-serif;font-size:14px;letter-spacing:0.05em;">⚠ BACK UP YOUR DATA</span>
+        <button class="tiny" style="color:var(--accent);background:transparent;padding:4px 8px;" onclick="exportAll()">BACK UP NOW</button>
+      </div>
+      <p class="small" style="color:var(--text);line-height:1.45;">Last backup: ${backupAgeLabel()}. Your baseline and stats live only on this phone until you download a backup and save it to Dropbox.</p>
     </div>
   `;
 }
@@ -830,8 +859,8 @@ function saveBaseline() {
   };
   state.baseline = draft;
   window._baselineDraft = null;
-  if (saveData()) showToast('Baseline saved');
-  render();
+  // baseline is the precious, rarely-changing data — auto-download a full backup on save
+  exportAll('Baseline saved — downloading backup');
 }
 function editBaseline() {
   window._baselineDraft = { ...state.baseline };
@@ -1169,12 +1198,16 @@ function renderExportCard() {
     <h3>EXPORT FULL BACKUP</h3>
     <p>Downloads a JSON file with everything: baseline, measurements, sessions, settings. Save to Dropbox as your master backup.</p>
     <button class="outline" onclick="exportAll()">DOWNLOAD BACKUP.JSON</button>
+    <p class="tiny ${isBackupStale() ? 'accent-text' : 'dim-text'} mt-2">Last backup: ${backupAgeLabel()}</p>
   </div>`;
 }
-function exportAll() {
+function exportAll(toastMsg) {
+  state.settings.lastBackupAt = todayISO();
+  saveData();
   const filename = `bronson-backup-${todayISO()}.json`;
   downloadFile(filename, JSON.stringify(state, null, 2));
-  showToast('Backup downloading');
+  showToast(toastMsg || 'Backup downloading');
+  render();
 }
 function renderImportCard() {
   return `<div class="card">
@@ -1313,6 +1346,7 @@ function render() {
   let body = '';
   body += renderHeader();
   body += '<main>';
+  body += renderBackupReminder();
   if (tab === 'today') body += renderToday();
   else if (tab === 'log') body += renderLog();
   else if (tab === 'stats') body += renderStats();
