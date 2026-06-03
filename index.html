@@ -34,6 +34,7 @@
     font-family: 'JetBrains Mono', ui-monospace, monospace;
     font-size: 14px;
     min-height: 100vh;
+    overflow-x: hidden;
     overscroll-behavior-y: contain;
   }
   body::before {
@@ -109,7 +110,7 @@
     border: 2px solid var(--border);
     color: var(--text);
     font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
+    font-size: 16px; /* >=16px stops iOS Safari auto-zooming (and h-scrolling) on focus */
     outline: none;
   }
   .input:focus, input:focus, textarea:focus { border-color: var(--accent); }
@@ -351,7 +352,7 @@
 const STORAGE_KEY = 'bronson-tracker-v1';
 
 // Build version — BUMP THIS ON EVERY DEPLOY so "Check for update" can detect a new build.
-const APP_VERSION = '2026.06.01-2';
+const APP_VERSION = '2026.06.01-3';
 
 const PHASES = {
   0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
