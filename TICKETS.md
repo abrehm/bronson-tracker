@@ -93,3 +93,18 @@ So:
   rarely-changing data).
 - A **stale-backup banner** appears when data exists and the last backup is
   missing or >7 days old, with one-tap "Back up now". SETUP shows "Last backup: <when>".
+
+---
+
+## TICKET-005 — Cool-down dropdown
+
+**Status:** DONE (2026-06-01)
+
+Gave the cool-down the same collapsible-accordion treatment as the warm-up
+(TICKET-002): a shared `COOLDOWN` constant + `renderCooldown()` / `toggleCooldown()`,
+replacing the static one-liner. Four movements (hamstring, quad, chest opener,
+child's pose) with durations and spotebi how-to links, collapsed by default.
+
+Verified during this work: warm-up and cool-down are **not** phase-specific —
+`PHASES` defines only exercises; both warm-up and cool-down are single shared
+constants rendered identically in every phase.

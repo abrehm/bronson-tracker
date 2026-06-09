@@ -352,7 +352,7 @@
 const STORAGE_KEY = 'bronson-tracker-v1';
 
 // Build version — BUMP THIS ON EVERY DEPLOY so "Check for update" can detect a new build.
-const APP_VERSION = '2026.06.01-5';
+const APP_VERSION = '2026.06.01-6';
 
 const PHASES = {
   0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
@@ -403,6 +403,15 @@ const WARMUP = [
   { name: 'Neck rolls',        duration: '5–10 slow rolls each way', link: 'https://spotebi.com/exercise-guide/neck-rolls/' },
   { name: 'Hip openers',       duration: '30–60s',                   link: 'https://www.healthline.com/health/opening-hips' },
   { name: 'Marching in place', duration: '1 min',                    link: 'https://spotebi.com/exercise-guide/march-in-place/' },
+];
+
+// Shared cool-down — same across all phases (like the warm-up; only exercises change per phase).
+// Total ~3–5 min; per-move durations are a sensible split, not gospel.
+const COOLDOWN = [
+  { name: 'Hamstring stretch', duration: '20–30s per leg',  link: 'https://spotebi.com/exercise-guide/hamstring-stretch/' },
+  { name: 'Quad stretch',      duration: '30s per leg',     link: 'https://spotebi.com/exercise-guide/quad-stretch/' },
+  { name: 'Chest opener',      duration: '15–30s per side', link: 'https://spotebi.com/exercise-guide/chest-stretch/' },
+  { name: "Child's pose",      duration: '30–60s',          link: 'https://spotebi.com/exercise-guide/childs-pose/' },
 ];
 
 const EMPTY_DATA = {
@@ -747,11 +756,7 @@ function renderSessionLogger(phase, week) {
   }
 
   html += `
-    <div class="card-thin">
-      <span style="color:var(--text);font-weight:bold;">COOL-DOWN</span>
-      <span class="dim-text"> · </span>
-      <span class="muted-text">3–5 min: hamstring, quad, chest opener, child's pose.</span>
-    </div>
+    ${renderCooldown()}
 
     <div class="card">
       <h3>HOW DID IT FEEL?</h3>
@@ -824,6 +829,30 @@ function renderWarmup() {
 }
 function toggleWarmup() {
   window._warmupOpen = !window._warmupOpen;
+  render();
+}
+function renderCooldown() {
+  const open = window._cooldownOpen;
+  let rows = '';
+  for (const c of COOLDOWN) {
+    rows += `<a href="${c.link}" target="_blank" rel="noopener noreferrer" class="lib-row">
+      <div class="lib-icon">▶</div>
+      <div class="lib-text">
+        <div class="lib-name">${escapeHTML(c.name)}</div>
+        <div class="lib-desc">${escapeHTML(c.duration)}</div>
+      </div>
+    </a>`;
+  }
+  return `<div style="margin-bottom:12px;">
+    <button class="phase-toggle" onclick="toggleCooldown()">
+      <span><span style="color:var(--text);font-weight:bold;">COOL-DOWN</span> <span class="dim-text">· 3–5 min</span></span>
+      <span>${open ? '▼' : '▶'}</span>
+    </button>
+    ${open ? `<div class="phase-content">${rows}</div>` : ''}
+  </div>`;
+}
+function toggleCooldown() {
+  window._cooldownOpen = !window._cooldownOpen;
   render();
 }
 
@@ -1383,6 +1412,7 @@ window.wipeAll = wipeAll;
 window.setManualPhase = setManualPhase;
 window.dismissTransition = dismissTransition;
 window.toggleWarmup = toggleWarmup;
+window.toggleCooldown = toggleCooldown;
 window.checkForUpdate = checkForUpdate;
 window.applyUpdate = applyUpdate;
 </script>
