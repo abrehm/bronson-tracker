@@ -352,7 +352,7 @@
 const STORAGE_KEY = 'bronson-tracker-v1';
 
 // Build version — BUMP THIS ON EVERY DEPLOY so "Check for update" can detect a new build.
-const APP_VERSION = '2026.06.01-6';
+const APP_VERSION = '2026.06.01-7';
 
 const PHASES = {
   0: { id: 0, name: 'PRE-START', sub: 'Baseline & prep', rounds: 0, daysPerWeek: 0, schedule: [], exercises: [] },
@@ -524,6 +524,75 @@ function getPhaseTransitionReminder() {
   }
   return null;
 }
+/* ---- Next workout + phase timeline ---- */
+function addDaysISO(iso, n) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  return new Date(iso + 'T00:00:00').toLocaleDateString(undefined, { month:'short', day:'numeric' });
+}
+function workoutWhenLabel(daysAway) {
+  if (daysAway <= 0) return 'today';
+  if (daysAway === 1) return 'tomorrow';
+  return `in ${daysAway} days`;
+}
+function nextScheduledDay(fromISO, schedule, includeFromDay) {
+  if (!fromISO || !schedule || !schedule.length) return null;
+  for (let n = includeFromDay ? 0 : 1; n <= 7; n++) {
+    const iso = addDaysISO(fromISO, n);
+    const dow = new Date(iso + 'T00:00:00').getDay();
+    if (schedule.includes(dow)) return { daysAway: n, iso, dayName: DAY_NAMES_FULL[dow] };
+  }
+  return null;
+}
+function getPhaseSchedule(startISO) {
+  return [
+    { id: 1, name: PHASES[1].name, start: startISO,                 end: addDaysISO(startISO, 27) },
+    { id: 2, name: PHASES[2].name, start: addDaysISO(startISO, 28), end: addDaysISO(startISO, 55) },
+    { id: 3, name: PHASES[3].name, start: addDaysISO(startISO, 56), end: null },
+  ];
+}
+function getNextPhaseTransition(startISO) {
+  if (!startISO) return null;
+  const today = todayISO();
+  const points = [
+    { toPhase: 1, name: PHASES[1].name, iso: startISO },
+    { toPhase: 2, name: PHASES[2].name, iso: addDaysISO(startISO, 28) },
+    { toPhase: 3, name: PHASES[3].name, iso: addDaysISO(startISO, 56) },
+  ];
+  for (const p of points) {
+    const daysAway = daysBetween(today, p.iso);
+    if (daysAway > 0) return { toPhase: p.toPhase, name: p.name, iso: p.iso, daysAway };
+  }
+  return null;
+}
+function renderPhaseTimelineCard() {
+  if (!state.startDate) return '';
+  const current = getAutoPhase(state.startDate);
+  const manual = isManualOverrideActive();
+  let rows = '';
+  for (const p of getPhaseSchedule(state.startDate)) {
+    const isCurrent = p.id === current;
+    const range = p.end ? `${fmtDateShort(p.start)} – ${fmtDateShort(p.end)}` : `${fmtDateShort(p.start)} →`;
+    rows += `<div class="row-between" style="padding:3px 0;">
+      <span style="color:${isCurrent ? 'var(--accent)' : 'var(--muted)'};">${isCurrent ? '● ' : '○ '}${p.name}</span>
+      <span class="tiny ${isCurrent ? 'accent-text' : 'dim-text'}">${range}</span>
+    </div>`;
+  }
+  const next = getNextPhaseTransition(state.startDate);
+  const nextLine = next
+    ? `Next: ${next.name} in ${next.daysAway} days (${fmtDateShort(next.iso)})${manual ? ' — manual override active' : ''}`
+    : 'Final phase — no more transitions.';
+  return `<div class="card">
+    <h3>PHASE TIMELINE</h3>
+    <p class="tiny">Proposed calendar dates. Cowork's readiness check confirms each move — if it says "repeat a week," these shift.</p>
+    <div class="mt-2">${rows}</div>
+    <p class="tiny accent-text mt-2">${nextLine}</p>
+  </div>`;
+}
 function fmtDate(iso) {
   if (!iso) return '—';
   const d = new Date(iso + 'T00:00:00');
@@ -580,11 +649,13 @@ function renderToday() {
   // Pre-start countdown
   if (phaseId === 0) {
     const daysUntil = -daysBetween(todayISO(), state.startDate);
+    const firstWorkout = nextScheduledDay(state.startDate, PHASES[1].schedule, true);
     return `
       <div class="card accent">
         <div class="label">Countdown to Phase I</div>
         <div class="display" style="font-size:64px;color:var(--accent);line-height:1;margin-top:4px;">${String(daysUntil).padStart(2,'0')}</div>
         <div class="tiny dim-text">days · start ${fmtDate(state.startDate)}</div>
+        ${firstWorkout ? `<div class="tiny accent-text mt-2">First workout · ${firstWorkout.dayName}, ${fmtDateShort(firstWorkout.iso)}</div>` : ''}
       </div>
       ${renderBaselineCard()}
       <div class="card">
@@ -716,6 +787,8 @@ function renderSessionLogger(phase, week) {
   const dow = new Date().getDay();
   const isScheduled = phase.schedule.includes(dow);
   const todaySess = state.sessions.find(s => s.date === todayISO());
+  const nextWorkout = nextScheduledDay(todayISO(), phase.schedule, false);
+  const nextPhase = getNextPhaseTransition(state.startDate);
 
   // Initialize draft if needed
   if (!sessionDraft || sessionDraft._phaseId !== phase.id) {
@@ -744,6 +817,8 @@ function renderSessionLogger(phase, week) {
         </div>
         ${todaySess ? '<span class="pill" style="color:var(--success);">LOGGED</span>' : ''}
       </div>
+      ${nextWorkout ? `<div class="tiny accent-text mt-2">NEXT WORKOUT · ${nextWorkout.dayName} (${workoutWhenLabel(nextWorkout.daysAway)})</div>` : ''}
+      ${nextPhase ? `<div class="tiny dim-text mt-2">NEXT PHASE · ${nextPhase.name} in ${nextPhase.daysAway} days (${fmtDateShort(nextPhase.iso)})</div>` : ''}
       ${!isScheduled ? `<p class="tiny mt-2">Scheduled: ${phase.schedule.map(d => DAY_NAMES_FULL[d]).join(' / ')}. Log anyway if you trained.</p>` : ''}
       ${week >= 5 ? `<button class="tiny mt-2" style="padding:4px 8px;border:1px solid ${sessionDraft.isCardWorkout ? 'var(--accent)' : 'var(--border)'};color:${sessionDraft.isCardWorkout ? 'var(--accent)' : 'var(--muted)'};background:transparent;" onclick="toggleCard()">${sessionDraft.isCardWorkout ? '✓ ' : ''}DECK-OF-CARDS WILDCARD</button>` : ''}
     </div>
@@ -1150,6 +1225,7 @@ function renderSetup() {
   return `
     ${renderStartDateCard()}
     ${renderPhaseOverrideCard()}
+    ${renderPhaseTimelineCard()}
     ${renderFootwearCard()}
     ${renderExportCard()}
     ${renderImportCard()}

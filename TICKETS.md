@@ -108,3 +108,20 @@ child's pose) with durations and spotebi how-to links, collapsed by default.
 Verified during this work: warm-up and cool-down are **not** phase-specific —
 `PHASES` defines only exercises; both warm-up and cool-down are single shared
 constants rendered identically in every phase.
+
+---
+
+## TICKET-006 — Next workout + phase timeline
+
+**Status:** DONE (2026-06-01)
+
+- **Next workout** on the TODAY workout card: `NEXT WORKOUT · <day> (in N days)`,
+  from the current phase's `schedule`. Pre-start countdown gains `First workout ·
+  <day>, <date>`.
+- **Next phase** one-liner on TODAY + a **PHASE TIMELINE** card in SETUP: each
+  phase's calendar date range, current one highlighted, and the next proposed
+  transition (`Next: Phase II in N days (<date>)`). Labeled "proposed" (Cowork's
+  readiness check can shift it); notes when a manual override is active.
+- Helpers: addDaysISO, fmtDateShort, workoutWhenLabel, nextScheduledDay,
+  getPhaseSchedule, getNextPhaseTransition, renderPhaseTimelineCard. Uses the
+  current phase's schedule (cross-phase precision intentionally skipped).
